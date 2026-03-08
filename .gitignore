@@ -5,3 +5,5 @@ reports/
 *.key
 *.pem
 .env
+.DS_Store
+.vscode/

@@ -1,0 +1,27 @@
+---
+- name: Shutdown
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Confirm shutdown (run once)
+      pause:
+        prompt: |
+          ⚠️  MAINTENANCE SHUTDOWN CONFIRMATION
+          You are about to shut down ALL targeted systems.
+          Type YES to proceed:
+      register: shutdown_confirm
+      run_once: true
+      delegate_to: localhost
+
+    - name: Abort if shutdown not confirmed
+      fail:
+        msg: "Shutdown aborted: confirmation not received."
+      when: shutdown_confirm.user_input != "YES"
+      run_once: true
+
+    - name: Shutdown system
+      ansible.builtin.command: shutdown -h now
+      async: 1
+      poll: 0
+

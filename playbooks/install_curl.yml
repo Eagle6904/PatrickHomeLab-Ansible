@@ -1,0 +1,9 @@
+---
+- name: Ensure curl is installed
+  hosts: all
+  become: true
+  tasks:
+     - name: Install_curl
+       package: 
+         name: curl
+         state: present

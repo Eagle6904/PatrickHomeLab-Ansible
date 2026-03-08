@@ -1,0 +1,24 @@
+---
+- name: Configure SSH access and service
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Ensure OpenSSH is installed
+      apt:
+        name: openssh-server
+        state: present
+        update_cache: true
+
+    - name: Ensure SSH is running and enabled
+      service:
+        name: ssh
+        state: started
+        enabled: true
+
+    - name: Ensure control node SSH key is authorized
+      authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_ed25519.pub') }}"
+        state: present
+

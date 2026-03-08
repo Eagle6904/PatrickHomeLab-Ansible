@@ -1,0 +1,7 @@
+---
+- name: Apply PatrickHomeLab Baseline
+  hosts: all:!forge
+  become: true
+
+  roles:
+    - baseline

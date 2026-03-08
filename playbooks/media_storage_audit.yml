@@ -1,0 +1,123 @@
+---
+- name: Media Storage Audit Playbook
+  hosts: media
+  become: true
+  gather_facts: yes
+
+  vars:
+    # Mount information (authoritative)
+    media_mount_path: /mnt/mybook
+    media_uuid: 4dfff65e-bc6c-4f4e-8cec-8e3b128ac51e
+
+    # Explicit repair flag (default OFF)
+    repair: false
+
+    # Expected media inventory (known structure)
+    media_inventory:
+      movies: /mnt/mybook/movies
+      tv_root: /mnt/mybook/TV
+      tv_shows: /mnt/mybook/TV/TV Shows
+
+  tasks:
+    # ----------------------------
+    # Mount audit
+    # ----------------------------
+    - name: Check if media mount path exists
+      stat:
+        path: "{{ media_mount_path }}"
+      register: media_mount_path_stat
+
+    - name: Check if media filesystem is mounted
+      command: mountpoint -q {{ media_mount_path }}
+      register: media_mount_check
+      changed_when: false
+      failed_when: false
+
+    - name: Warn if media mount path is missing
+      debug:
+        msg: "WARNING: Media mount path {{ media_mount_path }} does not exist."
+      when: not media_mount_path_stat.stat.exists
+
+    - name: Warn if media filesystem is not mounted
+      debug:
+        msg: "WARNING: Media filesystem (UUID={{ media_uuid }}) is NOT mounted at {{ media_mount_path }}."
+      when: media_mount_check.rc != 0
+
+    - name: Report media mount status
+      debug:
+        msg:
+          - "Mount path exists: {{ media_mount_path_stat.stat.exists }}"
+          - "Mounted: {{ media_mount_check.rc == 0 }}"
+
+    # ----------------------------
+    # Media directory inventory audit
+    # ----------------------------
+    - name: Check expected media directories
+      stat:
+        path: "{{ item.value }}"
+      loop: "{{ media_inventory | dict2items }}"
+      register: media_dir_stats
+
+    - name: Warn if expected media directory is missing
+      debug:
+        msg: "WARNING: Expected media directory missing: {{ item.item.value }}"
+      when: not item.stat.exists
+      loop: "{{ media_dir_stats.results }}"
+
+    - name: Report media directory audit summary
+      debug:
+        msg:
+          - "Media inventory audit complete."
+          - "Directories checked: {{ media_inventory | length }}"
+          - "Missing directories: {{
+              media_dir_stats.results
+              | rejectattr('stat.exists')
+              | list
+              | length
+            }}"
+    # ----------------------------
+    # Conditional repair block
+    # ----------------------------
+    - name: Repair media mount (UUID-based)
+      mount:
+        path: "{{ media_mount_path }}"
+        src: "UUID={{ media_uuid }}"
+        fstype: ext4
+        state: mounted
+      when:
+        - repair | bool
+        - media_mount_check.rc != 0
+
+    - name: Create missing media directories
+      file:
+        path: "{{ item.value }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop: "{{ media_inventory | dict2items }}"
+      register: dir_repair_results
+      when:
+        - repair | bool
+        - item.value is defined
+
+    # ----------------------------
+    # Repair summary (reporting)
+    # ----------------------------
+    - name: Repair summary report
+      debug:
+        msg:
+          - "MEDIA STORAGE REPAIR SUMMARY"
+          - "Mount repaired: {{
+              mount_repair_result is defined
+              and mount_repair_result.changed | default(false)
+            }}"
+          - "Directories created: {{
+              dir_repair_results.results
+              | selectattr('changed')
+              | list
+              | length
+              if dir_repair_results is defined
+              else 0
+            }}"
+      when: repair | bool

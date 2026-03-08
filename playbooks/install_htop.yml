@@ -1,0 +1,12 @@
+---
+- name: Ensure htop is installed
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Ensure htop is installed/ running/ configured
+      apt:
+        name: htop
+        state: present
+        update_cache: true
+

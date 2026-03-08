@@ -1,0 +1,21 @@
+---
+- name: Show hostname
+  ansible.builtin.command: hostname
+  register: hostname_out
+- name: Show uptime
+  ansible.builtin.command: uptime -p
+  register: uptime_out
+
+- name: Show root filesystem usage
+  ansible.builtin.command: df -h /
+  register: disk_out
+
+- name: Print audit summary
+  ansible.builtin.debug:
+   msg:
+    - "Host: {{ inventory_hostname }}"
+    - "Hostname: {{ hostname_out.stdout }}"
+    - "Uptime: {{ uptime_out.stdout }}"
+    - "Disk:"
+    - "{{ disk_out.stdout }}"
+

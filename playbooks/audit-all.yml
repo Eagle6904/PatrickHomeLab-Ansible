@@ -1,0 +1,8 @@
+---
+- name: Audit basic system state
+  hosts: all
+  gather_facts: yes
+  become: false
+
+  roles:
+   - audit

@@ -1,0 +1,47 @@
+---
+
+- name: Remove unused packages
+  ansible.builtin.apt:
+    autoremove: yes
+
+- name: Clean apt cache
+  ansible.builtin.apt:
+    autoclean: yes
+
+- name: Ensure system packages are up to date
+  ansible.builtin.apt:
+    update_cache: yes
+    upgrade: dist
+    cache_valid_time: 3600
+
+- name: Install common baseline packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - vim
+      - htop
+      - git
+      - ca-certificates
+      - gnupg
+
+- name: Ensure OpenSSH server is installed
+  ansible.builtin.apt:
+    name: openssh-server
+    state: present
+
+- name: Ensure SSH services is enabled and running
+  ansible.builtin.service:
+    name: ssh
+    state: started
+    enabled: true
+
+- name: Ensure PatrickHomeLab compliance marker exists
+  ansible.builtin.copy:
+    dest: /etc/patrickhomelab_baseline.conf
+    content:
+      Managed by Ansible
+      Node is compliant with PatrickHomeLab baseline.
+    owner: root
+    group: root
+    mode: '0644'

@@ -1,0 +1,7 @@
+logs/
+reports/
+*.log
+*.retry
+*.key
+*.pem
+.env
